@@ -51,8 +51,8 @@ class SinglyLinkedList {
     if (!this.head) {
       return undefined;
     }
-    let currentHead = this.head;
-    this.head = currentHead.next;
+    let temp = this.head;
+    this.head = temp.next;
     this.length--;
     if (this.length == 0) {
       this.tail = null;
@@ -82,34 +82,52 @@ class SinglyLinkedList {
     return this;
   }
 
+  get(index) {
+    if (index < 0 || index >= this.length) {
+      return null;
+    }
+
+    let current = this.head;
+    let counter = 0;
+
+    while (counter !== index) {
+      current = current.next;
+      counter++;
+    }
+    return current;
+  }
+
+  set(index, value) {
+    let foundNode = this.get(index);
+    if (foundNode) {
+      foundNode.value = value;
+      return true;
+    }
+    return true;
+  }
+
   insert(position, value) {
     // Check if the position is out of bounds
     if (position < 0 || position > this.length) {
       throw new Error("Position out of bounds");
     } else if (position === 0) {
       // If the position is 0, insert the new node at the head
-      const newNode = new Node(value);
-      newNode.next = this.head;
-      this.head = newNode;
+      this.unShift(value);
       // If the list was empty, update the tail to the new node
       if (this.length === 0) {
-        this.tail = newNode;
+        this.push(value);
       }
-      // Increment the length of the list
-      this.length++;
     } else {
       // Create a new node with the given value
       const newNode = new Node(value);
-      let currNode = this.head;
-      let currPos = 0;
+
       // Traverse the list to find the node before the insertion point
-      while (currPos < position - 1) {
-        currNode = currNode.next;
-        ++currPos;
-      }
+      let nodeBeforeInsertionPoint = this.get(position - 1);
+      let currentNodeInThatPosition = nodeBeforeInsertionPoint.next;
+      newNode.next = currentNodeInThatPosition;
       // Insert the new node by updating the next pointers
-      newNode.next = currNode.next;
-      currNode.next = newNode;
+      nodeBeforeInsertionPoint.next = newNode;
+
       // If the new node is inserted at the end, update the tail
       if (newNode.next === null) {
         this.tail = newNode;
@@ -178,5 +196,15 @@ const sll = new SinglyLinkedList();
 // console.log("removed node ", sll.pop());
 // console.log("removed node from the begining ", sll.shift());
 
-sll.unShift("Hello");
+// sll.unShift("Hello");
+
+sll.push("Hello");
+sll.push("Akram");
+sll.push("Good Bye");
+sll.push("<3");
+
+// console.log("node at index", sll.get(3));
+
+sll.set(1, "Hidhaya");
+
 console.log(JSON.stringify(sll));
