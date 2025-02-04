@@ -109,71 +109,74 @@ class SinglyLinkedList {
   insert(position, value) {
     // Check if the position is out of bounds
     if (position < 0 || position > this.length) {
-      throw new Error("Position out of bounds");
-    } else if (position === 0) {
+      return false;
       // If the position is 0, insert the new node at the head
+    } else if (position === 0) {
       this.unShift(value);
-      // If the list was empty, update the tail to the new node
-      if (this.length === 0) {
-        this.push(value);
-      }
+      return true;
+    }
+    // If the list was empty, update the tail to the new node
+    else if (this.length === position) {
+      this.push(value);
+      return true;
     } else {
       // Create a new node with the given value
       const newNode = new Node(value);
 
       // Traverse the list to find the node before the insertion point
       let nodeBeforeInsertionPoint = this.get(position - 1);
+
+      //to maintain the link of remaining nodes after the new node is inserted at the position  we need to store the next node of the node before insertion point
       let currentNodeInThatPosition = nodeBeforeInsertionPoint.next;
+
+      // link the newnode next pointer to the next node of the node before insertion point
       newNode.next = currentNodeInThatPosition;
+
       // Insert the new node by updating the next pointers
       nodeBeforeInsertionPoint.next = newNode;
-
-      // If the new node is inserted at the end, update the tail
-      if (newNode.next === null) {
-        this.tail = newNode;
-      }
       // Increment the length of the list
-      ++this.length;
+      this.length++;
+      return true;
     }
     // Return the modified list
-    return this;
   }
 
-  deleteAtPosition(position) {
-    // Check if the position is out of bounds
-    if (position < 0 || position >= this.length) {
-      throw new Error("Position out of bounds");
-    }
-
-    // If deleting the first node (head)
-    if (position === 0) {
-      this.head = this.head.next; // Move head to the next node
-
-      // If the list had only one node, update the tail to null
-      if (this.length === 1) {
-        this.tail = null;
-      }
+  remove(index) {
+    // Check if the index is out of bounds
+    if (index < 0 || index >= this.length) {
+      return undefined;
+    } else if (index === this.length - 1) {
+      return this.pop();
+    } else if (index == 0) {
+      return this.shift();
     } else {
-      // Traverse the list to find the node before the one to be deleted
-      let prev = this.head;
-      for (let i = 0; i < position - 1; i++) {
-        prev = prev.next;
-      }
+      let nodeBeforeDeletionPoint = this.get(index - 1);
+      // ActualNode to be removed
+      let removedNode = nodeBeforeDeletionPoint.next;
 
-      // Remove the target node by updating the next pointer
-      prev.next = prev.next.next;
+      // bypass the node and point to next node of the removed node
+      nodeBeforeDeletionPoint.next = removedNode.next;
+      this.length--;
+      return removedNode.value;
+    }
+  }
 
-      // If the deleted node was the last one, update the tail
-      if (position === this.length - 1) {
-        this.tail = prev;
-      }
+  reverse() {
+    if (!this.head || !this.head.next) return; // Edge case: Empty or single-node list
+
+    this.tail = this.head; // Store original head as new tail
+    let prev = null;
+    let current = this.head;
+
+    while (current !== null) {
+      let follow = current.next; // Save next node
+      current.next = prev; // Reverse pointer
+      prev = current; // Move prev forward
+      current = follow; // Move current forward
     }
 
-    // Decrement the length of the list after deletion
-    this.length--;
-
-    // Return the modified list
-    return this;
+    this.head = prev; // Update head to new first node
+    this.tail.next = null; // Ensure new tail points to null
   }
 }
 
@@ -196,15 +199,12 @@ const sll = new SinglyLinkedList();
 // console.log("removed node ", sll.pop());
 // console.log("removed node from the begining ", sll.shift());
 
-// sll.unShift("Hello");
+// sll.unShift("Hello");̃
 
 sll.push("Hello");
 sll.push("Akram");
 sll.push("Good Bye");
 sll.push("<3");
-
-// console.log("node at index", sll.get(3));
-
-sll.set(1, "Hidhaya");
-
+// sll.insert(2, "I am inserted at 2nd position");
+sll.remove(1);
 console.log(JSON.stringify(sll));
