@@ -10,6 +10,17 @@ A **stack** is an **abstract data structure** that follows the **LIFO (Last In, 
 4. **isEmpty()** → Checks if the stack is empty.
 5. **isFull()** (for fixed-size stacks) → Checks if the stack is full.
 
+## Time Complexity of Stack Operations
+
+| Operation | Time Complexity |
+| --------- | --------------- |
+| Push      | O(1)            |
+| Pop       | O(1)            |
+| Peek      | O(1)            |
+| isEmpty   | O(1)            |
+
+The time complexity for all the key stack operations (push, pop, peek, isEmpty) is **O(1)**.
+
 ## Implementations
 
 A stack can be implemented using:
