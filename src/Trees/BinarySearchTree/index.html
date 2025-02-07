@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>BST Visualization</title>
+  </head>
+  <body>
+    <canvas id="treeCanvas" width="800" height="600"></canvas>
+    <script type="module">
+      import { BST, myBst } from "./bst.js"; // Import BOTH
+
+      function visualizeWithCanvas(bst, canvasId) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) {
+          console.error("Canvas element not found.");
+          return;
+        }
+
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (!bst || !bst.root) {
+          console.warn("BST is empty or invalid.");
+          ctx.fillStyle = "red";
+          ctx.font = "20px Arial";
+          ctx.fillText(
+            "Tree is empty",
+            canvas.width / 2 - 50,
+            canvas.height / 2
+          );
+          return;
+        }
+
+        const xStart = canvas.width / 2;
+        const yStart = 50;
+
+        function drawTree(node, x, y, level) {
+          if (!node) return;
+
+          const radius = 20;
+          const xOffset = Math.max(100 / (level + 1), 30);
+          const yOffset = 70;
+
+          // Draw left subtree first (edges first)
+          if (node.left) {
+            const leftX = x - xOffset;
+            const leftY = y + yOffset;
+            ctx.beginPath();
+            ctx.moveTo(x, y + radius);
+            ctx.lineTo(leftX, leftY - radius);
+            ctx.stroke();
+            drawTree(node.left, leftX, leftY, level + 1);
+          }
+
+          // Draw right subtree (edges first)
+          if (node.right) {
+            const rightX = x + xOffset;
+            const rightY = y + yOffset;
+            ctx.beginPath();
+            ctx.moveTo(x, y + radius);
+            ctx.lineTo(rightX, rightY - radius);
+            ctx.stroke();
+            drawTree(node.right, rightX, rightY, level + 1);
+          }
+
+          // Draw the node (AFTER edges for clarity)
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, 2 * Math.PI);
+          ctx.fillStyle = "lightblue";
+          ctx.fill();
+          ctx.stroke();
+
+          // Draw node value
+          ctx.fillStyle = "black";
+          ctx.font = "16px Arial";
+          ctx.textAlign = "center";
+          ctx.fillText(node.value, x, y + 5);
+        }
+
+        drawTree(bst.root, xStart, yStart, 0);
+
+        // Show warning if duplicates were attempted
+        if (bst.duplicateDetected) {
+          ctx.fillStyle = "red";
+          ctx.font = "18px Arial";
+          ctx.textAlign = "center";
+          ctx.fillText(
+            "⚠️ Duplicates are not valid in a BST!",
+            canvas.width / 2,
+            20 // Move the text to the top (adjusted Y position)
+          );
+        }
+      }
+
+      //    Use the pre-built myBST
+      visualizeWithCanvas(myBst, "treeCanvas");
+    </script>
+  </body>
+</html>
