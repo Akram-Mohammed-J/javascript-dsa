@@ -1,4 +1,6 @@
-# Recursion and Helper Method Recursion ## 1. Understanding Recursion
+# Recursion and Helper Method Recursion
+
+## 1. Understanding Recursion
 
 Recursion is a programming technique where a function calls itself to solve a problem. Each recursive call works on a smaller subset of the original problem until it reaches a base case.
 
