@@ -6,7 +6,8 @@
   <body>
     <canvas id="treeCanvas" width="800" height="600"></canvas>
     <script type="module">
-      import { BST, myBst } from "./bst.js"; // Import BOTH
+      //import { BST, myBst } from "./bst.js"; // Import BOTH
+      import  {tree} from "../Traversal/BFS/bfs-tree.js"
 
       function visualizeWithCanvas(bst, canvasId) {
         const canvas = document.getElementById(canvasId);
@@ -92,7 +93,7 @@
       }
 
       //    Use the pre-built myBST
-      visualizeWithCanvas(myBst, "treeCanvas");
+      visualizeWithCanvas(tree, "treeCanvas");
     </script>
   </body>
 </html>
