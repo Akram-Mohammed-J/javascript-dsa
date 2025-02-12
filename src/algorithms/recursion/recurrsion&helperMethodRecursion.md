@@ -71,7 +71,9 @@ Helper Method Recursion is a pattern where an **outer function** sets up variabl
 
 ---
 
-## 4. Visual Representation ### Call Stack for `factorial(3)`:
+## 4. Visual Representation
+
+### Call Stack for `factorial(3)`:
 
     factorial(3)
         factorial(2)
