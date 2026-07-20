@@ -88,26 +88,57 @@ All heap operations maintain the **complete binary tree** structure.
 
 A binary heap is typically stored in an **array** instead of using pointers.
 
+### (i) Zero-Indexed Array (index starts at 0)
+
 For a node at **index `i`**:
 
-- **Left child** → `2i + 1`
-- **Right child** → `2i + 2`
-- **Parent** → `(i - 1) / 2`
+| Relationship   | Formula            |
+| -------------- | ------------------ |
+| **Parent**     | `⌊(i - 1) / 2⌋`   |
+| **Left child** | `2i + 1`           |
+| **Right child**| `2i + 2`           |
 
-#### Example Heap in an Array:
-
-    Heap (Min-Heap):
-          10
-         /  \
-       20    30
-      /  \
-    40   50
+#### Example:
 
     Array: [10, 20, 30, 40, 50]
+    Index:   0   1   2   3   4
 
-- `Parent of 20 (index 1) = (1-1)/2 = 0 (10)`
-- `Left child of 10 (index 0) = 2*0 + 1 = 1 (20)`
-- `Right child of 10 (index 0) = 2*0 + 2 = 2 (30)`
+- `Parent of 20 (index 1) = ⌊(1-1)/2⌋ = 0 → 10`
+- `Left child of 10 (index 0) = 2*0 + 1 = 1 → 20`
+- `Right child of 10 (index 0) = 2*0 + 2 = 2 → 30`
+- `Parent of 40 (index 3) = ⌊(3-1)/2⌋ = 1 → 20`
+
+### (ii) One-Indexed Array (index starts at 1)
+
+For a node at **index `i`**:
+
+| Relationship   | Formula      |
+| -------------- | ------------ |
+| **Parent**     | `⌊i / 2⌋`    |
+| **Left child** | `2i`         |
+| **Right child**| `2i + 1`     |
+
+#### Example:
+
+    Array: [_, 10, 20, 30, 40, 50]   (index 0 unused)
+    Index:  0   1   2   3   4   5
+
+- `Parent of 20 (index 2) = ⌊2/2⌋ = 1 → 10`
+- `Left child of 10 (index 1) = 2*1 = 2 → 20`
+- `Right child of 10 (index 1) = 2*1 + 1 = 3 → 30`
+- `Parent of 40 (index 4) = ⌊4/2⌋ = 2 → 20`
+
+### Summary Comparison
+
+| Operation        | 0-Indexed (`i` from 0) | 1-Indexed (`i` from 1) |
+| ---------------- | ---------------------- | ---------------------- |
+| **Parent**       | `⌊(i - 1) / 2⌋`       | `⌊i / 2⌋`             |
+| **Left child**   | `2i + 1`               | `2i`                   |
+| **Right child**  | `2i + 2`               | `2i + 1`              |
+
+> **Note:** When finding the parent of the `i`th element, always take the **floor value** (round down) of the division. This is because both the left and right child of a node must map back to the same parent. For example, in 0-indexed: parent of index 3 = `⌊(3-1)/2⌋ = ⌊1⌋ = 1` and parent of index 4 = `⌊(4-1)/2⌋ = ⌊1.5⌋ = 1` — both correctly point to the same parent. In code, use `Math.floor()` or integer division (e.g., `(i - 1) >> 1` in JavaScript).
+
+> **Note:** 1-indexed formulas are cleaner (bit-shift friendly: left child = `i << 1`, parent = `i >> 1`), but most languages use 0-indexed arrays, so the `2i+1` / `2i+2` variant is more common in practice.
 
 ---
 

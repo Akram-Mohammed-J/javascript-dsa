@@ -1,0 +1,923 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Sliding Window — Visual Guide</title>
+    <style>
+      :root {
+        --bg: #fafaf7;
+        --panel: #ffffff;
+        --border: #e3e1da;
+        --text: #24282e;
+        --text-soft: #6b7178;
+
+        --left-fill: #ece9fb;
+        --left-line: #7a6fe0;
+        --left-text: #4a3fb0;
+
+        --right-fill: #e4f0fa;
+        --right-line: #3e8fcb;
+        --right-text: #235e85;
+
+        --valid-fill: #e1f5ec;
+        --valid-line: #279e72;
+        --valid-text: #147a54;
+
+        --invalid-fill: #fbe9e4;
+        --invalid-line: #d8623a;
+        --invalid-text: #a6431f;
+
+        --neutral-fill: #f1f0ec;
+        --neutral-line: #c9c6bc;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          "Segoe UI",
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        line-height: 1.6;
+      }
+
+      .page {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 48px 32px 80px;
+      }
+
+      h1 {
+        font-size: 30px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        margin: 0 0 6px;
+      }
+      .subtitle {
+        color: var(--text-soft);
+        font-size: 15px;
+        margin: 0 0 40px;
+      }
+
+      h2 {
+        font-size: 21px;
+        font-weight: 700;
+        margin: 56px 0 6px;
+        padding-top: 8px;
+        border-top: 1px solid var(--border);
+      }
+      h2 .num {
+        display: inline-block;
+        color: var(--text-soft);
+        font-weight: 600;
+        margin-right: 8px;
+      }
+      h3 {
+        font-size: 15px;
+        font-weight: 700;
+        margin: 28px 0 10px;
+        color: var(--text-soft);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      p {
+        font-size: 15.5px;
+        margin: 0 0 14px;
+      }
+      code {
+        font-family: "SF Mono", Consolas, monospace;
+        background: var(--neutral-fill);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 1px 6px;
+        font-size: 13.5px;
+      }
+      pre {
+        background: #1e2126;
+        color: #e8e6de;
+        border-radius: 10px;
+        padding: 18px 20px;
+        overflow-x: auto;
+        font-family: "SF Mono", Consolas, monospace;
+        font-size: 13px;
+        line-height: 1.65;
+      }
+      pre .c1 {
+        color: #8b93a0;
+      }
+
+      .diagram-box {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 24px;
+        margin: 18px 0 28px;
+      }
+      .diagram-caption {
+        font-size: 13px;
+        color: var(--text-soft);
+        text-align: center;
+        margin-top: 10px;
+      }
+
+      .key-line {
+        background: linear-gradient(90deg, #f4f2ff, #eef7ff);
+        border: 1px solid #d9d4f5;
+        border-radius: 10px;
+        padding: 14px 18px;
+        font-size: 15px;
+        margin: 14px 0 30px;
+      }
+      .key-line b {
+        color: #4a3fb0;
+      }
+
+      .legend {
+        display: flex;
+        gap: 18px;
+        flex-wrap: wrap;
+        font-size: 12.5px;
+        margin: 8px 0 18px;
+        color: var(--text-soft);
+      }
+      .legend span.dot {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+        margin-right: 5px;
+        vertical-align: -1px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        margin: 14px 0 28px;
+      }
+      th,
+      td {
+        border: 1px solid var(--border);
+        padding: 9px 12px;
+        text-align: left;
+      }
+      th {
+        background: var(--neutral-fill);
+        font-weight: 700;
+        font-size: 12.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: var(--text-soft);
+      }
+
+      .flow-svg-wrap {
+        display: flex;
+        justify-content: center;
+      }
+
+      .summary-box {
+        background: #1e2126;
+        color: #e8e6de;
+        border-radius: 14px;
+        padding: 26px 28px;
+        font-size: 15px;
+        margin-top: 20px;
+      }
+      .summary-box b {
+        color: #f2c97d;
+      }
+      .summary-box code {
+        color: #279e72;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <h1>Sliding Window — Visual Guide</h1>
+      <p class="subtitle">
+        The three sliding window patterns, shown as real diagrams — not ASCII
+        art.
+      </p>
+
+      <div class="key-line">
+        <b>The one rule that never changes:</b> <code>right</code> moves forward
+        every iteration, no exceptions. <code>left</code> only moves forward
+        inside a shrink step — <i>when</i> and <i>why</i> it moves is the only
+        thing that differs between problems.
+      </div>
+
+      <h2><span class="num">1</span>The Core Picture</h2>
+      <p>
+        Every sliding window problem maintains a contiguous range inside an
+        array, marked by two pointers.
+      </p>
+
+      <div class="diagram-box">
+        <div id="diagram-core"></div>
+        <div class="diagram-caption">
+          The window is everything between
+          <b style="color: var(--left-text)">left</b> and
+          <b style="color: var(--right-text)">right</b>, inclusive on both ends.
+        </div>
+      </div>
+
+      <h2><span class="num">2</span>Flavor 1 — Fixed-Size Window</h2>
+      <p>
+        <b>Use when:</b> the problem gives an exact window size
+        <code>k</code> upfront — sum of every <code>k</code> consecutive
+        elements, average of <code>k</code> days, and so on.
+      </p>
+
+      <pre>function fixedWindow(arr, k) {
+    let windowValue = 0;
+    let best = -Infinity;
+
+    for (let right = 0; right &lt; arr.length; right++) {
+        windowValue += arr[right];              <span class="c1">// grow</span>
+
+        if (right &gt;= k - 1) {
+            best = Math.max(best, windowValue);   <span class="c1">// record</span>
+            windowValue -= arr[right - k + 1];     <span class="c1">// shrink automatically</span>
+        }
+    }
+    return best;
+}</pre>
+
+      <div class="legend">
+        <span
+          ><span class="dot" style="background: var(--right-line)"></span>just
+          added (grow)</span
+        >
+        <span
+          ><span class="dot" style="background: var(--invalid-line)"></span>just
+          removed (shrink)</span
+        >
+        <span
+          ><span class="dot" style="background: var(--valid-line)"></span
+          >current window</span
+        >
+      </div>
+
+      <div class="diagram-box">
+        <div id="diagram-fixed"></div>
+        <div class="diagram-caption">
+          <code>arr = [2, 1, 5, 1, 3, 2]</code>, <code>k = 3</code> — the window
+          slides by exactly one position each step, best sum found is <b>9</b>.
+        </div>
+      </div>
+
+      <div class="key-line">
+        <b>Core thing to remember:</b> <code>left</code> never gets its own
+        variable — it's always <code>right - k + 1</code>, computed directly.
+        Shrinking is automatic, not a decision.
+      </div>
+
+      <h2>
+        <span class="num">3</span>Flavor 2 — Longest Valid Window (Shrink Only
+        When Broken)
+      </h2>
+      <p>
+        <b>Use when:</b> finding the <b>longest</b> substring/subarray
+        satisfying a property — e.g. "longest substring without repeating
+        characters."
+      </p>
+
+      <pre>for (let right = 0; right &lt; s.length; right++) {
+    include(s[right]);                  <span class="c1">// grow — always happens</span>
+
+    while (isInvalid()) {               <span class="c1">// shrink only if broken</span>
+        exclude(s[left]);
+        left++;
+    }
+
+    best = Math.max(best, right - left + 1);   <span class="c1">// record AFTER fixing</span>
+}</pre>
+
+      <div class="legend">
+        <span
+          ><span class="dot" style="background: var(--valid-line)"></span>window
+          is valid</span
+        >
+        <span
+          ><span class="dot" style="background: var(--invalid-line)"></span
+          >window is invalid (duplicate found)</span
+        >
+        <span
+          ><span class="dot" style="background: var(--left-line)"></span
+          >character being dropped by left</span
+        >
+      </div>
+
+      <div class="diagram-box">
+        <div id="diagram-longest"></div>
+        <div class="diagram-caption">
+          <code>s = "abcabcbb"</code> — longest run without repeats is
+          <b>3</b> ("abc").
+        </div>
+      </div>
+
+      <div class="key-line">
+        <b>Core thing to remember:</b> the while-loop runs <i>while invalid</i>.
+        The moment it's fixed, stop shrinking and record. You always record
+        <i>after</i> the window is guaranteed valid.
+      </div>
+
+      <h2>
+        <span class="num">4</span>Flavor 3 — Shortest Valid Window (Shrink While
+        Still Valid)
+      </h2>
+      <p>
+        <b>Use when:</b> finding the <b>shortest</b> window satisfying a
+        property — e.g. "minimum window substring" or "smallest subarray with
+        sum ≥ target."
+      </p>
+
+      <pre>for (let right = 0; right &lt; nums.length; right++) {
+    include(nums[right]);                <span class="c1">// grow — always happens</span>
+
+    while (isValid()) {                  <span class="c1">// shrink WHILE valid</span>
+        best = Math.min(best, right - left + 1);   <span class="c1">// record BEFORE shrinking further</span>
+        exclude(nums[left]);
+        left++;
+    }
+}</pre>
+
+      <div class="legend">
+        <span
+          ><span class="dot" style="background: var(--valid-line)"></span>window
+          is valid (target met)</span
+        >
+        <span
+          ><span class="dot" style="background: var(--neutral-line)"></span
+          >window is not valid yet</span
+        >
+        <span
+          ><span class="dot" style="background: var(--left-line)"></span>being
+          squeezed out while still valid</span
+        >
+      </div>
+
+      <div class="diagram-box">
+        <div id="diagram-shortest"></div>
+        <div class="diagram-caption">
+          <code>nums = [2, 3, 1, 2, 4, 3]</code>, target sum ≥ 7 — shortest
+          valid window found is length <b>2</b> ([4, 3]).
+        </div>
+      </div>
+
+      <div class="key-line">
+        <b>Core thing to remember:</b> this while-loop condition is the
+        <i>opposite</i> of Flavor 2 — loop while <i>valid</i>, not while broken.
+        Record <i>inside</i> the loop, every single step, because each shrink
+        (while still valid) is a new, smaller candidate.
+      </div>
+
+      <h2><span class="num">5</span>Which Flavor Do I Need?</h2>
+      <div class="diagram-box">
+        <div class="flow-svg-wrap"><div id="diagram-flow"></div></div>
+      </div>
+
+      <h2><span class="num">6</span>Side-by-Side Comparison</h2>
+      <table>
+        <tr>
+          <th></th>
+          <th>Flavor 1: Fixed</th>
+          <th>Flavor 2: Longest</th>
+          <th>Flavor 3: Shortest</th>
+        </tr>
+        <tr>
+          <td><b>Window size</b></td>
+          <td>Given (k)</td>
+          <td>Grows until invalid</td>
+          <td>Grows until valid</td>
+        </tr>
+        <tr>
+          <td><b>left movement</b></td>
+          <td>Direct formula</td>
+          <td>Shrink only when broken</td>
+          <td>Shrink while still valid</td>
+        </tr>
+        <tr>
+          <td><b>Shrink condition</b></td>
+          <td>None (unconditional)</td>
+          <td><code>while(isInvalid())</code></td>
+          <td><code>while(isValid())</code></td>
+        </tr>
+        <tr>
+          <td><b>Record timing</b></td>
+          <td>After window fills</td>
+          <td>After shrink loop ends</td>
+          <td>Inside the shrink loop</td>
+        </tr>
+        <tr>
+          <td><b>Goal</b></td>
+          <td>Best value, fixed windows</td>
+          <td>Maximize length</td>
+          <td>Minimize length</td>
+        </tr>
+      </table>
+
+      <h2><span class="num">7</span>Why the Nested Loop Isn't O(n²)</h2>
+      <p>
+        <code>left</code> never resets backward — across the <i>entire</i> run
+        of the algorithm, it moves forward at most <code>n</code> times total,
+        not per outer iteration. So even though the loop looks nested, the total
+        combined work is bounded by <code>n + n = O(n)</code>. This is called
+        amortized analysis.
+      </p>
+
+      <div class="summary-box">
+        <b>The one-paragraph summary:</b> Sliding window maintains a contiguous
+        range with two pointers, where <code>right</code> always advances and
+        <code>left</code> advances only during a shrink step. A
+        <b>fixed-size</b> window shrinks automatically and unconditionally. A
+        <b>longest-valid-window</b> search shrinks only when the window breaks a
+        rule, recording right after fixing it. A
+        <b>shortest-valid-window</b> search shrinks for as long as the window
+        stays valid, recording a new candidate at every single step of that
+        shrink. All three run in O(n) because <code>left</code> can move forward
+        at most <code>n</code> times, no matter how the loops are nested.
+      </div>
+    </div>
+
+    <script>
+      const NS = "http://www.w3.org/2000/svg";
+      function el(tag, attrs) {
+        const e = document.createElementNS(NS, tag);
+        for (const k in attrs) e.setAttribute(k, attrs[k]);
+        return e;
+      }
+      function text(x, y, str, attrs) {
+        const t = el(
+          "text",
+          Object.assign(
+            {
+              x,
+              y,
+              "text-anchor": "middle",
+              "font-family": "SF Mono, Consolas, monospace",
+            },
+            attrs,
+          ),
+        );
+        t.textContent = str;
+        return t;
+      }
+
+      // Draws one row of boxes representing array/string values with optional
+      // window highlight, pointer labels, and small marker glyphs.
+      function drawRow(svg, x0, y0, values, opts) {
+        opts = opts || {};
+        const boxW = 42,
+          boxH = 42,
+          gap = 6;
+        const colors = {
+          valid: [
+            "var(--valid-fill)",
+            "var(--valid-line)",
+            "var(--valid-text)",
+          ],
+          invalid: [
+            "var(--invalid-fill)",
+            "var(--invalid-line)",
+            "var(--invalid-text)",
+          ],
+          neutral: [
+            "var(--neutral-fill)",
+            "var(--neutral-line)",
+            "var(--text)",
+          ],
+        };
+
+        values.forEach((v, i) => {
+          const x = x0 + i * (boxW + gap);
+          let state = "neutral";
+          if (opts.range && i >= opts.range[0] && i <= opts.range[1]) {
+            state = opts.rangeState || "valid";
+          }
+          if (opts.highlightIdx && opts.highlightIdx.includes(i)) {
+            state = opts.highlightState || state;
+          }
+          const [fill, line, txt] = colors[state];
+          const rect = el("rect", {
+            x,
+            y: y0,
+            width: boxW,
+            height: boxH,
+            rx: 8,
+            fill,
+            stroke: line,
+            "stroke-width": state === "neutral" ? 1 : 1.6,
+          });
+          svg.appendChild(rect);
+          svg.appendChild(
+            text(x + boxW / 2, y0 + boxH / 2 + 5, v, {
+              "font-size": 14,
+              "font-weight": 600,
+              fill: txt,
+            }),
+          );
+
+          if (opts.showIndex) {
+            svg.appendChild(
+              text(x + boxW / 2, y0 + boxH + 14, i, {
+                "font-size": 9,
+                fill: "var(--text-soft)",
+              }),
+            );
+          }
+        });
+
+        // pointer labels (drawn above or below)
+        (opts.pointers || []).forEach((p) => {
+          const x = x0 + p.index * (boxW + gap) + boxW / 2;
+          const colorMap = {
+            left: "var(--left-line)",
+            right: "var(--right-line)",
+          };
+          const bgMap = {
+            left: "var(--left-fill)",
+            right: "var(--right-fill)",
+          };
+          const py = p.above ? y0 - 22 : y0 + boxH + 28;
+          const tag = el("rect", {
+            x: x - 16,
+            y: py - 13,
+            width: 32,
+            height: 18,
+            rx: 5,
+            fill: bgMap[p.type] || "#eee",
+            stroke: colorMap[p.type] || "#999",
+          });
+          svg.appendChild(tag);
+          svg.appendChild(
+            text(x, py, p.label, {
+              "font-size": 10,
+              "font-weight": 700,
+              fill: colorMap[p.type] || "#333",
+            }),
+          );
+        });
+
+        return x0 + values.length * (boxW + gap);
+      }
+
+      function makeSvg(container, width, height) {
+        const svg = el("svg", {
+          width,
+          height,
+          viewBox: `0 0 ${width} ${height}`,
+        });
+        document.getElementById(container).innerHTML = "";
+        document.getElementById(container).appendChild(svg);
+        return svg;
+      }
+
+      // ---------- Diagram: core concept ----------
+      (function () {
+        const svg = makeSvg("diagram-core", 640, 165);
+        const vals = ["7", "3", "9", "4", "1", "6", "2", "8"];
+        drawRow(svg, 20, 30, vals, {
+          range: [2, 5],
+          rangeState: "valid",
+          showIndex: true,
+          pointers: [
+            { index: 2, label: "left", type: "left" },
+            { index: 5, label: "right", type: "right" },
+          ],
+        });
+        svg.appendChild(
+          text(320, 150, "window = [2, 5]  →  length = right - left + 1 = 4", {
+            "font-size": 12,
+            fill: "var(--text-soft)",
+          }),
+        );
+      })();
+
+      // ---------- Diagram: fixed window ----------
+      (function () {
+        const svg = makeSvg("diagram-fixed", 640, 300);
+        const arr = [2, 1, 5, 1, 3, 2];
+        const rowH = 62;
+        const steps = [
+          {
+            r: 2,
+            label: "right=2  sum=8   FULL → record 8, drop idx0",
+            win: [0, 2],
+          },
+          {
+            r: 3,
+            label: "right=3  sum=7   FULL → best stays 8, drop idx1",
+            win: [1, 3],
+          },
+          {
+            r: 4,
+            label: "right=4  sum=9   FULL → new best = 9, drop idx2",
+            win: [2, 4],
+          },
+          { r: 5, label: "right=5  sum=6   FULL → best stays 9", win: [3, 5] },
+        ];
+        steps.forEach((s, i) => {
+          const y = 20 + i * rowH;
+          drawRow(svg, 20, y, arr, { range: s.win, rangeState: "valid" });
+          svg.appendChild(
+            text(330, y + 27, s.label, {
+              "font-size": 12,
+              "text-anchor": "start",
+              fill: "var(--text-soft)",
+            }),
+          );
+        });
+        svg.appendChild(
+          text(320, 20 + steps.length * rowH + 16, "best sum found = 9", {
+            "font-size": 13,
+            "font-weight": 700,
+            fill: "var(--valid-text)",
+          }),
+        );
+      })();
+
+      // ---------- Diagram: longest valid window ----------
+      (function () {
+        const svg = makeSvg("diagram-longest", 700, 350);
+        const s = ["a", "b", "c", "a", "b", "c", "b", "b"];
+        const rowH = 60;
+        const steps = [
+          {
+            win: [0, 2],
+            state: "valid",
+            label: 'right=2  "abc"  valid, len 3',
+          },
+          {
+            win: [0, 3],
+            state: "invalid",
+            label: 'right=3  "abca"  INVALID dup a',
+            drop: 0,
+          },
+          {
+            win: [1, 3],
+            state: "valid",
+            label: 'shrink -> "bca"  valid again, len 3',
+          },
+          {
+            win: [1, 4],
+            state: "invalid",
+            label: 'right=4  "bcab"  INVALID dup b',
+            drop: 1,
+          },
+          {
+            win: [2, 4],
+            state: "valid",
+            label: 'shrink -> "cab"  valid again, len 3',
+          },
+        ];
+        steps.forEach((st, i) => {
+          const y = 20 + i * rowH;
+          drawRow(svg, 20, y, s, {
+            range: st.win,
+            rangeState: st.state,
+            highlightIdx: st.drop !== undefined ? [st.drop] : [],
+            highlightState: "invalid",
+          });
+          svg.appendChild(
+            text(415, y + 27, st.label, {
+              "font-size": 11.5,
+              "text-anchor": "start",
+              fill:
+                st.state === "invalid"
+                  ? "var(--invalid-text)"
+                  : "var(--text-soft)",
+            }),
+          );
+        });
+        svg.appendChild(
+          text(
+            320,
+            20 + steps.length * rowH + 16,
+            'best length = 3   ("abc")',
+            { "font-size": 13, "font-weight": 700, fill: "var(--valid-text)" },
+          ),
+        );
+      })();
+
+      // ---------- Diagram: shortest valid window ----------
+      (function () {
+        const svg = makeSvg("diagram-shortest", 640, 350);
+        const arr = [2, 3, 1, 2, 4, 3];
+        const rowH = 60;
+        const steps = [
+          {
+            win: [0, 3],
+            state: "valid",
+            label: "sum=8 ≥7  VALID → record len=4",
+          },
+          {
+            win: [1, 3],
+            state: "neutral",
+            label: "shrink → sum=6  now invalid, stop",
+          },
+          {
+            win: [1, 4],
+            state: "valid",
+            label: "right=4  sum=10 ≥7  VALID → record len=4",
+          },
+          {
+            win: [2, 4],
+            state: "valid",
+            label: "shrink → sum=7 ≥7  STILL valid → record len=3",
+          },
+          {
+            win: [4, 5],
+            state: "valid",
+            label: "...continues...  shortest found: len=2 [4,3]",
+          },
+        ];
+        steps.forEach((st, i) => {
+          const y = 20 + i * rowH;
+          drawRow(svg, 20, y, arr, { range: st.win, rangeState: st.state });
+          svg.appendChild(
+            text(330, y + 27, st.label, {
+              "font-size": 11.5,
+              "text-anchor": "start",
+              fill: "var(--text-soft)",
+            }),
+          );
+        });
+        svg.appendChild(
+          text(
+            320,
+            20 + steps.length * rowH + 16,
+            "shortest valid window = 2   ([4, 3])",
+            { "font-size": 13, "font-weight": 700, fill: "var(--valid-text)" },
+          ),
+        );
+      })();
+
+      // ---------- Diagram: decision flowchart ----------
+      (function () {
+        const svg = makeSvg("diagram-flow", 620, 400);
+        function box(x, y, w, h, fill, line, label, txtColor) {
+          const r = el("rect", {
+            x,
+            y,
+            width: w,
+            height: h,
+            rx: 10,
+            fill,
+            stroke: line,
+            "stroke-width": 1.6,
+          });
+          svg.appendChild(r);
+          const lines = label.split("\n");
+          lines.forEach((ln, i) => {
+            svg.appendChild(
+              text(
+                x + w / 2,
+                y + h / 2 - (lines.length - 1) * 8 + i * 16 + 5,
+                ln,
+                {
+                  "font-size": 12.5,
+                  "font-weight": 600,
+                  fill: txtColor || "var(--text)",
+                },
+              ),
+            );
+          });
+        }
+        function seg(x1, y1, x2, y2, arrowEnd) {
+          const attrs = {
+            x1,
+            y1,
+            x2,
+            y2,
+            stroke: "var(--text-soft)",
+            "stroke-width": 1.5,
+          };
+          if (arrowEnd) attrs["marker-end"] = "url(#arrowhead)";
+          svg.appendChild(el("line", attrs));
+        }
+        const defs = el("defs", {});
+        const marker = el("marker", {
+          id: "arrowhead",
+          markerWidth: 8,
+          markerHeight: 8,
+          refX: 6,
+          refY: 4,
+          orient: "auto",
+        });
+        const poly = el("polygon", {
+          points: "0 0, 8 4, 0 8",
+          fill: "var(--text-soft)",
+        });
+        marker.appendChild(poly);
+        defs.appendChild(marker);
+        svg.appendChild(defs);
+
+        // Top decision box
+        box(
+          220,
+          10,
+          180,
+          55,
+          "var(--neutral-fill)",
+          "var(--neutral-line)",
+          "Is window size\nfixed (k given)?",
+        );
+
+        // "no" path: straight down to the second decision box
+        seg(310, 65, 310, 150, true);
+        svg.appendChild(
+          text(322, 112, "no", {
+            "font-size": 11,
+            "font-weight": 700,
+            fill: "var(--left-text)",
+            "text-anchor": "start",
+          }),
+        );
+
+        // "yes" path: elbow left from top box down into Flavor 1
+        seg(220, 45, 150, 45, false);
+        seg(150, 45, 150, 160, false);
+        seg(150, 160, 210, 160, true);
+        svg.appendChild(
+          text(160, 38, "yes", {
+            "font-size": 11,
+            "font-weight": 700,
+            fill: "var(--right-text)",
+          }),
+        );
+
+        box(
+          30,
+          135,
+          180,
+          50,
+          "var(--right-fill)",
+          "var(--right-line)",
+          "FLAVOR 1\nFixed-Size Window",
+          "var(--right-text)",
+        );
+
+        // Second decision box
+        box(
+          220,
+          150,
+          180,
+          55,
+          "var(--neutral-fill)",
+          "var(--neutral-line)",
+          "Longest or\nshortest window?",
+        );
+
+        // longest path
+        seg(310, 205, 150, 270, true);
+        svg.appendChild(
+          text(200, 238, "longest", {
+            "font-size": 11,
+            "font-weight": 700,
+            fill: "var(--valid-text)",
+            "text-anchor": "start",
+          }),
+        );
+        box(
+          30,
+          275,
+          220,
+          58,
+          "var(--valid-fill)",
+          "var(--valid-line)",
+          "FLAVOR 2\nShrink WHEN invalid\nRecord AFTER",
+          "var(--valid-text)",
+        );
+
+        // shortest path
+        seg(310, 205, 470, 270, true);
+        svg.appendChild(
+          text(400, 238, "shortest", {
+            "font-size": 11,
+            "font-weight": 700,
+            fill: "var(--left-text)",
+            "text-anchor": "start",
+          }),
+        );
+        box(
+          360,
+          275,
+          220,
+          58,
+          "var(--left-fill)",
+          "var(--left-line)",
+          "FLAVOR 3\nShrink WHILE valid\nRecord DURING",
+          "var(--left-text)",
+        );
+      })();
+    </script>
+  </body>
+</html>
