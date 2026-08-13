@@ -111,6 +111,21 @@ class GraphWithAdjacencyList {
     }
     return result;
   }
+  dfs(src, isVisited = new Array(this.V + 1).fill(false), result = []) {
+    result.push(src);
+    isVisited[src] = true;
+
+    let nbrs = this.adjacencyList.get(src);
+    let curr = nbrs.head;
+
+    while (curr != null) {
+      if (!isVisited[curr.val]) {
+        this.dfs(curr.val, isVisited, result);
+      }
+      curr = curr.next;
+    }
+    return result;
+  }
 }
 
 let V = 6;
@@ -127,6 +142,7 @@ for (let [vertex, list] of adListG.adjacencyList) {
   console.log(`  ${vertex} ->`, JSON.stringify(list.toArray()));
 }
 console.log("BFS TRAVERSAL", adListG.bfs(1));
+console.log("BFS TRAVERSAL", adListG.dfs(1));
 
 adMtxG.addVertex(1, 2, 20, false);
 adMtxG.addVertex(2, 5, 80, false);
