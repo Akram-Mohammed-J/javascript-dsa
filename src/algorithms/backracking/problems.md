@@ -1,4 +1,4 @@
-Problem: Ways to Climb Stairs
+#### 1. Problem: Ways to Climb Stairs
 You are given an integer n representing the number of stairs in a staircase.
 
 You start at the bottom of the staircase and can climb either 1 stair or 2 stairs at a time.
@@ -60,6 +60,33 @@ Each move must be either 1 or 2 stairs.
 Every returned sequence must sum exactly to n.
 Follow-up
 Can you solve this using DFS/backtracking and explain the time and space complexity?
+
+
+#### 2.Travelling Maze — Backtracking Problem
+Given a maze represented as a 2D grid, a traveller needs to find all possible paths from a starting cell to a destination cell.
+
+The maze contains:
+
+0 — an open cell that can be visited.
+1 — a wall that cannot be crossed.
+The traveller can move up, down, left, or right.
+
+Rules
+You cannot move through walls.
+You cannot visit the same cell more than once in a single path.
+Find and print all possible paths from the start to the destination.
+This problem should be solved using backtracking.
+Input
+const maze = [
+  [0, 1, 0, 0, 0],
+  [0, 0, 0, 1, 0],
+  [0, 0, 0, 1, 0],
+  [1, 1, 0, 0, 0],
+  [0, 0, 0, 1, 0]
+];
+
+const start = [0, 0];
+const destination = [4, 4];.
 
 
 
