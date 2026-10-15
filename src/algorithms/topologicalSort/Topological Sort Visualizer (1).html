@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Topological sort, step by step</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #EDF0F3;
+    --grid: #D7DEE6;
+    --surface: #FFFFFF;
+    --surface-2: #F7F9FA;
+    --border: #C7D0DB;
+    --ink: #14203A;
+    --ink-soft: #5B6680;
+    --signal: #E8572A;
+    --signal-soft: #FBE2D7;
+    --complete: #1F8A5F;
+    --complete-soft: #DCEFE6;
+    --cycle: #C62828;
+    --cycle-soft: #FBDADA;
+    --edge: #AEB7C4;
+    --node-fill: #FFFFFF;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10151F;
+      --grid: #1C2331;
+      --surface: #161D29;
+      --surface-2: #1B2332;
+      --border: #2B3448;
+      --ink: #E7ECF3;
+      --ink-soft: #97A2B8;
+      --signal: #FF8A50;
+      --signal-soft: #3A2419;
+      --complete: #4ED399;
+      --complete-soft: #123326;
+      --cycle: #FF6B6B;
+      --cycle-soft: #3A1414;
+      --edge: #3C4760;
+      --node-fill: #1B2332;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #10151F;
+    --grid: #1C2331;
+    --surface: #161D29;
+    --surface-2: #1B2332;
+    --border: #2B3448;
+    --ink: #E7ECF3;
+    --ink-soft: #97A2B8;
+    --signal: #FF8A50;
+    --signal-soft: #3A2419;
+    --complete: #4ED399;
+    --complete-soft: #123326;
+    --cycle: #FF6B6B;
+    --cycle-soft: #3A1414;
+    --edge: #3C4760;
+    --node-fill: #1B2332;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Space Grotesk', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    line-height: 1.45;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+
+  button, select, input {
+    font-family: inherit;
+    color: inherit;
+  }
+  button:focus-visible, select:focus-visible, input:focus-visible, [tabindex]:focus-visible {
+    outline: 2px solid var(--signal);
+    outline-offset: 2px;
+  }
+
+  .app {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 24px 60px;
+  }
+
+  .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+  }
+  .top h1 {
+    font-size: 1.65rem;
+    font-weight: 700;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+  .top p {
+    margin: 0;
+    max-width: 46ch;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+  }
+  .preset-control {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .preset-control label {
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+  }
+  .preset-control select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 8px 10px;
+    font-size: 0.92rem;
+    min-width: 200px;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 22px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .stage {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+
+  .toolbar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .mode-btn, .ghost-btn, .transport button {
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--ink);
+    border-radius: 7px;
+    padding: 7px 13px;
+    font-size: 0.86rem;
+    cursor: pointer;
+    transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mode-btn, .ghost-btn, .transport button, .node-group rect, .edge-line, .stack-chip, .reveal { transition: none !important; animation: none !important; }
+  }
+  .mode-btn:hover, .ghost-btn:hover { border-color: var(--ink-soft); }
+  .mode-btn.active {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--surface);
+  }
+  .ghost-btn { margin-left: auto; }
+
+  .canvas-wrap {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--bg);
+    overflow: hidden;
+  }
+  #graphSvg {
+    display: block;
+    width: 100%;
+    height: auto;
+    touch-action: none;
+  }
+  .hint {
+    margin: 0;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    border-top: 1px solid var(--border);
+    background: var(--surface-2);
+  }
+
+  .node-group { cursor: grab; }
+  .node-group.dragging { cursor: grabbing; }
+  .node-group rect {
+    fill: var(--node-fill);
+    stroke: var(--ink-soft);
+    stroke-width: 2;
+    transition: stroke 220ms ease, stroke-width 220ms ease, filter 220ms ease;
+  }
+  .node-group.state-active rect { stroke: var(--signal); stroke-width: 3; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--signal) 45%, transparent)); }
+  .node-group.state-done rect { stroke: var(--complete); stroke-width: 2.5; }
+  .node-group.current rect { stroke-width: 4; }
+  .node-group.selected-edge-start rect { stroke: var(--signal); stroke-dasharray: 5 3; }
+  .node-group text {
+    fill: var(--ink);
+    font-size: 15px;
+    font-weight: 500;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .edge-line {
+    stroke: var(--edge);
+    stroke-width: 2;
+    fill: none;
+    transition: stroke 200ms ease, stroke-width 200ms ease;
+  }
+  .edge-hit { stroke: transparent; stroke-width: 16; cursor: pointer; }
+  .edge-active .edge-line { stroke: var(--signal); stroke-width: 3; }
+  .edge-cycle .edge-line { stroke: var(--cycle); stroke-width: 3.5; }
+
+  .transport {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+  .transport button { font-size: 1rem; padding: 7px 12px; }
+  .speed { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--ink-soft); }
+  .speed input { accent-color: var(--signal); }
+  .step-count {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+  }
+
+  .status {
+    margin: 14px 2px 0;
+    min-height: 2.6em;
+    font-size: 0.95rem;
+  }
+  .status.is-cycle { color: var(--cycle); font-weight: 600; }
+
+  .panels {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .dot { width: 9px; height: 9px; border-radius: 2px; display: inline-block; border: 2px solid var(--ink-soft); }
+  .dot.active { border-color: var(--signal); }
+  .dot.done { border-color: var(--complete); background: var(--complete-soft); }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .panel h2 {
+    font-size: 0.92rem;
+    margin: 0 0 2px;
+  }
+  .panel-sub {
+    margin: 0 0 10px;
+    font-size: 0.76rem;
+    color: var(--ink-soft);
+  }
+
+  .stack-view {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 6px;
+    min-height: 54px;
+    justify-content: flex-start;
+  }
+  .stack-view.horizontal {
+    flex-direction: row;
+    flex-wrap: wrap;
+    min-height: 40px;
+  }
+  .stack-empty {
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    font-style: normal;
+  }
+  .stack-chip {
+    background: var(--surface-2);
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.8rem;
+    animation: pop 180ms ease;
+  }
+  .stack-chip.top { border-color: var(--signal); color: var(--signal); }
+  @keyframes pop { from { transform: scale(0.85); opacity: 0.4; } to { transform: scale(1); opacity: 1; } }
+
+  .order-reveal {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border);
+  }
+  .order-reveal h3 {
+    font-size: 0.78rem;
+    margin: 0 0 8px;
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+  .order-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .order-chip {
+    background: var(--complete-soft);
+    border: 1.5px solid var(--complete);
+    color: var(--complete);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.8rem;
+  }
+  .reveal {
+    opacity: 0;
+    transform: translateY(6px);
+    animation: reveal 360ms ease forwards;
+  }
+  @keyframes reveal { to { opacity: 1; transform: translateY(0); } }
+
+  .cycle-banner {
+    margin-top: 10px;
+    padding: 8px 10px;
+    border-radius: 7px;
+    background: var(--cycle-soft);
+    color: var(--cycle);
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+
+  .code-panel pre {
+    margin: 0;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.78rem;
+    line-height: 1.75;
+    overflow-x: auto;
+  }
+  .code-line {
+    display: block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: var(--ink-soft);
+    white-space: pre;
+  }
+  .code-line.active {
+    background: var(--signal-soft);
+    color: var(--signal);
+  }
+  .code-line.active.cycle-line {
+    background: var(--cycle-soft);
+    color: var(--cycle);
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div class="title-block">
+      <h1>Topological sort</h1>
+      <p>Watch depth-first search work out a valid order — or catch the cycle that proves no order exists.</p>
+    </div>
+    <div class="preset-control">
+      <label for="presetSelect">Example</label>
+      <select id="presetSelect">
+        <option value="dressing">Getting dressed</option>
+        <option value="courses">Course prerequisites</option>
+        <option value="cycle">A graph with a cycle</option>
+        <option value="blank">Start from scratch</option>
+      </select>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="stage">
+      <div class="toolbar" role="toolbar" aria-label="Editing mode">
+        <button class="mode-btn active" data-mode="move">Move</button>
+        <button class="mode-btn" data-mode="add-node">Add node</button>
+        <button class="mode-btn" data-mode="add-edge">Add edge</button>
+        <button class="mode-btn" data-mode="delete">Delete</button>
+        <button class="ghost-btn" id="clearBtn">Clear graph</button>
+      </div>
+
+      <div class="canvas-wrap">
+        <svg id="graphSvg" viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <pattern id="dotgrid" width="26" height="26" patternUnits="userSpaceOnUse">
+              <circle cx="1.2" cy="1.2" r="1.2" fill="var(--grid)"></circle>
+            </pattern>
+            <marker id="arrow-default" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--edge)"></path>
+            </marker>
+            <marker id="arrow-active" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--signal)"></path>
+            </marker>
+            <marker id="arrow-cycle" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--cycle)"></path>
+            </marker>
+          </defs>
+          <rect x="0" y="0" width="1000" height="560" fill="url(#dotgrid)"></rect>
+          <g id="edgeLayer"></g>
+          <g id="nodeLayer"></g>
+        </svg>
+        <p class="hint" id="modeHint">Drag nodes to rearrange them.</p>
+      </div>
+
+      <div class="transport">
+        <button id="resetBtn" title="Restart">⏮ Restart</button>
+        <button id="prevBtn" title="Step back">◀ Back</button>
+        <button id="playBtn" title="Play">▶ Play</button>
+        <button id="nextBtn" title="Step forward">Next ▶</button>
+        <div class="speed">
+          <label for="speedRange">Speed</label>
+          <input type="range" id="speedRange" min="1" max="4" value="2" step="1">
+        </div>
+        <div class="step-count" id="stepCount">Step 0 / 0</div>
+      </div>
+
+      <p class="status" id="statusLine" aria-live="polite">Pick an example above, or build your own graph, then press play.</p>
+    </section>
+
+    <aside class="panels">
+      <div class="legend">
+        <span><i class="dot"></i> Not visited</span>
+        <span><i class="dot active"></i> On the current path</span>
+        <span><i class="dot done"></i> Finished</span>
+      </div>
+
+      <div class="panel">
+        <h2>Call stack</h2>
+        <p class="panel-sub">Who's waiting on whom, right now</p>
+        <div class="stack-view" id="callStackView"></div>
+      </div>
+
+      <div class="panel">
+        <h2 id="outputTitle">Finish order</h2>
+        <p class="panel-sub" id="outputSub">Fills in as each node is fully explored</p>
+        <div class="stack-view horizontal" id="outputView"></div>
+        <div id="orderReveal"></div>
+      </div>
+
+      <div class="panel code-panel">
+        <h2>The algorithm</h2>
+        <pre id="codeView"></pre>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  const CODE_LINES = [
+    "function dfs(node):",
+    "  state[node] = ACTIVE",
+    "  for neighbor of graph[node]:",
+    "    if state[neighbor] == ACTIVE:",
+    "      cycle found — stop",
+    "    else if state[neighbor] == UNVISITED:",
+    "      dfs(neighbor)",
+    "  state[node] = DONE",
+    "  push node onto finish stack",
+    "reverse the finish stack → topological order"
+  ];
+
+  const PRESETS = {
+    dressing: {
+      nodes: ["Undershorts","Pants","Belt","Shirt","Tie","Jacket","Socks","Shoes","Watch"],
+      edges: [["Undershorts","Pants"],["Undershorts","Shoes"],["Pants","Belt"],["Pants","Shoes"],
+               ["Shirt","Belt"],["Shirt","Tie"],["Tie","Jacket"],["Belt","Jacket"],["Socks","Shoes"]]
+    },
+    courses: {
+      nodes: ["Intro CS","Discrete Math","Data Structures","Algorithms","Databases","Machine Learning"],
+      edges: [["Intro CS","Data Structures"],["Discrete Math","Algorithms"],["Data Structures","Algorithms"],
+               ["Data Structures","Databases"],["Algorithms","Machine Learning"]]
+    },
+    cycle: {
+      nodes: ["A","B","C","D"],
+      edges: [["A","B"],["B","C"],["C","A"],["D","A"]]
+    },
+    blank: { nodes: [], edges: [] }
+  };
+
+  // ---------- state ----------
+  const svg = document.getElementById("graphSvg");
+  const edgeLayer = document.getElementById("edgeLayer");
+  const nodeLayer = document.getElementById("nodeLayer");
+
+  let nodes = new Map();   // id -> {id, label, x, y, w, h}
+  let nodeOrder = [];      // insertion order of ids
+  let edges = [];          // {id, from, to}
+  let nodeCounter = 0;
+  let edgeCounter = 0;
+
+  let mode = "move";
+  let edgeStartId = null;
+  let dragId = null;
+  let dragMoved = false;
+
+  let trace = [];
+  let stepIndex = 0;
+  let playing = false;
+  let playTimer = null;
+
+  const SPEED_MS = { 1: 1500, 2: 950, 3: 550, 4: 260 };
+
+  // ---------- graph editing helpers ----------
+  function addNode(label, x, y) {
+    const id = "n" + (++nodeCounter);
+    const w = Math.max(74, label.length * 9 + 30);
+    const h = 44;
+    nodes.set(id, { id, label, x, y, w, h });
+    nodeOrder.push(id);
+    return id;
+  }
+
+  function addEdge(from, to) {
+    if (from === to) return;
+    if (edges.some(e => e.from === from && e.to === to)) return;
+    edges.push({ id: "e" + (++edgeCounter), from, to });
+  }
+
+  function removeNode(id) {
+    nodes.delete(id);
+    nodeOrder = nodeOrder.filter(n => n !== id);
+    edges = edges.filter(e => e.from !== id && e.to !== id);
+    if (edgeStartId === id) edgeStartId = null;
+  }
+
+  function removeEdge(id) {
+    edges = edges.filter(e => e.id !== id);
+  }
+
+  function loadPreset(key) {
+    nodes = new Map();
+    nodeOrder = [];
+    edges = [];
+    edgeStartId = null;
+    const preset = PRESETS[key];
+    const labelToId = {};
+    const positions = layoutGrid(preset.nodes.length);
+    preset.nodes.forEach((label, i) => {
+      const id = addNode(label, positions[i].x, positions[i].y);
+      labelToId[label] = id;
+    });
+    preset.edges.forEach(([a, b]) => addEdge(labelToId[a], labelToId[b]));
+    onGraphChanged();
+  }
+
+  function layoutGrid(n) {
+    const positions = [];
+    if (n === 0) return positions;
+    const cols = n <= 4 ? n : Math.ceil(Math.sqrt(n * 1.5));
+    const rows = Math.ceil(n / cols);
+    const marginX = 120, marginY = 90;
+    const availW = 1000 - marginX * 2;
+    const availH = 560 - marginY * 2;
+    for (let i = 0; i < n; i++) {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x = cols === 1 ? 500 : marginX + (availW * col) / (cols - 1);
+      const y = rows === 1 ? 280 : marginY + (availH * row) / (rows - 1);
+      positions.push({ x, y });
+    }
+    return positions;
+  }
+
+  // ---------- algorithm trace ----------
+  function computeTrace() {
+    const state = {};
+    nodeOrder.forEach(id => { state[id] = 0; });
+    const adj = {};
+    nodeOrder.forEach(id => { adj[id] = []; });
+    edges.forEach(e => { if (adj[e.from]) adj[e.from].push(e.to); });
+
+    const callStack = [];
+    const output = [];
+    const steps = [];
+    let cycleFound = false;
+
+    function snapshot(extra) {
+      steps.push(Object.assign({
+        state: Object.assign({}, state),
+        callStack: callStack.slice(),
+        output: output.slice()
+      }, extra));
+    }
+
+    steps.push({ action: "start", state: Object.assign({}, state), callStack: [], output: [], line: [] });
+
+    function dfs(node) {
+      state[node] = 1;
+      callStack.push(node);
+      snapshot({ action: "enter", node, line: [1] });
+
+      for (const nbr of adj[node]) {
+        if (cycleFound) return;
+        const nbrState = state[nbr];
+        if (nbrState === 1) {
+          snapshot({ action: "check-edge", node, neighbor: nbr, neighborStateBefore: nbrState, line: [3] });
+          cycleFound = true;
+          snapshot({ action: "cycle", node, neighbor: nbr, line: [4] });
+          return;
+        } else if (nbrState === 0) {
+          snapshot({ action: "check-edge", node, neighbor: nbr, neighborStateBefore: nbrState, line: [5] });
+          dfs(nbr);
+        } else {
+          snapshot({ action: "check-edge", node, neighbor: nbr, neighborStateBefore: nbrState, line: [2] });
+        }
+      }
+      if (cycleFound) return;
+      state[node] = 2;
+      callStack.pop();
+      output.push(node);
+      snapshot({ action: "finish", node, line: [7, 8] });
+    }
+
+    for (const id of nodeOrder) {
+      if (cycleFound) break;
+      if (state[id] === 0) dfs(id);
+    }
+
+    if (cycleFound) {
+      snapshot({ action: "cycle-detected", line: [] });
+    } else if (nodeOrder.length > 0) {
+      snapshot({ action: "complete", order: output.slice().reverse(), line: [9] });
+    }
+
+    trace = steps;
+    stepIndex = 0;
+  }
+
+  // ---------- rendering ----------
+  function label(id) { const n = nodes.get(id); return n ? n.label : id; }
+
+  function ellipsePoint(cx, cy, rx, ry, dx, dy) {
+    const denom = Math.sqrt((dx * dx) / (rx * rx) + (dy * dy) / (ry * ry)) || 1;
+    const t = 1 / denom;
+    return { x: cx + dx * t, y: cy + dy * t };
+  }
+
+  function drawGraph() {
+    edgeLayer.innerHTML = "";
+    nodeLayer.innerHTML = "";
+
+    edges.forEach(e => {
+      const a = nodes.get(e.from), b = nodes.get(e.to);
+      if (!a || !b) return;
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const p1 = ellipsePoint(a.x, a.y, a.w / 2 + 6, a.h / 2 + 6, dx, dy);
+      const p2 = ellipsePoint(b.x, b.y, b.w / 2 + 10, b.h / 2 + 10, -dx, -dy);
+
+      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      g.setAttribute("class", "edge-group");
+      g.setAttribute("data-edge-id", e.id);
+
+      const hit = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      hit.setAttribute("class", "edge-hit");
+      hit.setAttribute("x1", p1.x); hit.setAttribute("y1", p1.y);
+      hit.setAttribute("x2", p2.x); hit.setAttribute("y2", p2.y);
+
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("class", "edge-line");
+      line.setAttribute("x1", p1.x); line.setAttribute("y1", p1.y);
+      line.setAttribute("x2", p2.x); line.setAttribute("y2", p2.y);
+      line.setAttribute("marker-end", "url(#arrow-default)");
+
+      g.appendChild(hit);
+      g.appendChild(line);
+      edgeLayer.appendChild(g);
+
+      if (mode === "delete") {
+        hit.addEventListener("click", () => { removeEdge(e.id); onGraphChanged(); });
+      }
+    });
+
+    nodeOrder.forEach(id => {
+      const n = nodes.get(id);
+      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      g.setAttribute("class", "node-group");
+      g.setAttribute("data-id", id);
+      g.setAttribute("transform", `translate(${n.x - n.w / 2}, ${n.y - n.h / 2})`);
+
+      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      rect.setAttribute("width", n.w);
+      rect.setAttribute("height", n.h);
+      rect.setAttribute("rx", 7);
+
+      const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      text.setAttribute("x", n.w / 2);
+      text.setAttribute("y", n.h / 2 + 5);
+      text.setAttribute("text-anchor", "middle");
+      text.textContent = n.label;
+
+      g.appendChild(rect);
+      g.appendChild(text);
+      nodeLayer.appendChild(g);
+
+      attachNodeEvents(g, id);
+    });
+  }
+
+  function attachNodeEvents(g, id) {
+    g.addEventListener("pointerdown", (ev) => {
+      if (mode === "move") {
+        dragId = id;
+        dragMoved = false;
+        g.classList.add("dragging");
+        g.setPointerCapture(ev.pointerId);
+      }
+    });
+    g.addEventListener("pointermove", (ev) => {
+      if (mode === "move" && dragId === id) {
+        dragMoved = true;
+        const pt = toSvgCoords(ev.clientX, ev.clientY);
+        const n = nodes.get(id);
+        n.x = pt.x; n.y = pt.y;
+        g.setAttribute("transform", `translate(${n.x - n.w / 2}, ${n.y - n.h / 2})`);
+        drawEdgesOnly();
+      }
+    });
+    g.addEventListener("pointerup", () => {
+      if (mode === "move") {
+        g.classList.remove("dragging");
+        dragId = null;
+      } else if (mode === "add-edge" && !dragMoved) {
+        handleEdgeClick(id);
+      } else if (mode === "delete") {
+        removeNode(id);
+        onGraphChanged();
+      }
+    });
+    g.addEventListener("dblclick", () => {
+      const n = nodes.get(id);
+      const newLabel = window.prompt("Rename node", n.label);
+      if (newLabel && newLabel.trim()) {
+        n.label = newLabel.trim();
+        n.w = Math.max(74, n.label.length * 9 + 30);
+        onGraphChanged();
+      }
+    });
+  }
+
+  function drawEdgesOnly() {
+    // cheap redraw of edge positions only (used while dragging)
+    edgeLayer.innerHTML = "";
+    edges.forEach(e => {
+      const a = nodes.get(e.from), b = nodes.get(e.to);
+      if (!a || !b) return;
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const p1 = ellipsePoint(a.x, a.y, a.w / 2 + 6, a.h / 2 + 6, dx, dy);
+      const p2 = ellipsePoint(b.x, b.y, b.w / 2 + 10, b.h / 2 + 10, -dx, -dy);
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("class", "edge-line");
+      line.setAttribute("x1", p1.x); line.setAttribute("y1", p1.y);
+      line.setAttribute("x2", p2.x); line.setAttribute("y2", p2.y);
+      line.setAttribute("marker-end", "url(#arrow-default)");
+      edgeLayer.appendChild(line);
+    });
+  }
+
+  function toSvgCoords(clientX, clientY) {
+    const pt = svg.createSVGPoint();
+    pt.x = clientX; pt.y = clientY;
+    const ctm = svg.getScreenCTM().inverse();
+    const sp = pt.matrixTransform(ctm);
+    return { x: sp.x, y: sp.y };
+  }
+
+  function handleEdgeClick(id) {
+    if (edgeStartId === null) {
+      edgeStartId = id;
+    } else if (edgeStartId === id) {
+      edgeStartId = null;
+    } else {
+      addEdge(edgeStartId, id);
+      edgeStartId = null;
+      onGraphChanged();
+      return;
+    }
+    renderSelectionHighlight();
+  }
+
+  function renderSelectionHighlight() {
+    nodeLayer.querySelectorAll(".node-group").forEach(g => {
+      g.classList.toggle("selected-edge-start", g.getAttribute("data-id") === edgeStartId);
+    });
+  }
+
+  // canvas background click -> add node in add-node mode
+  svg.addEventListener("pointerup", (ev) => {
+    if (ev.target !== svg && ev.target.tagName !== "rect") return;
+    if (mode !== "add-node") return;
+    if (ev.target.closest && ev.target.closest(".node-group")) return;
+    const pt = toSvgCoords(ev.clientX, ev.clientY);
+    addNode("Node " + (nodeCounter + 1), pt.x, pt.y);
+    onGraphChanged();
+  });
+
+  // ---------- step rendering ----------
+  function renderStep() {
+    const step = trace[stepIndex] || { action: "empty", state: {}, callStack: [], output: [], line: [] };
+
+    // node states
+    nodeLayer.querySelectorAll(".node-group").forEach(g => {
+      const id = g.getAttribute("data-id");
+      const s = step.state ? step.state[id] : 0;
+      g.classList.toggle("state-active", s === 1);
+      g.classList.toggle("state-done", s === 2);
+      g.classList.toggle("current", step.node === id);
+    });
+
+    // edge highlight
+    edgeLayer.querySelectorAll(".edge-group").forEach(g => {
+      const eid = g.getAttribute("data-edge-id");
+      const e = edges.find(x => x.id === eid);
+      g.classList.remove("edge-active", "edge-cycle");
+      const line = g.querySelector(".edge-line");
+      if (!e || !line) return;
+      if (e.from === step.node && e.to === step.neighbor) {
+        if (step.action === "cycle") {
+          g.classList.add("edge-cycle");
+          line.setAttribute("marker-end", "url(#arrow-cycle)");
+        } else {
+          g.classList.add("edge-active");
+          line.setAttribute("marker-end", "url(#arrow-active)");
+        }
+      } else {
+        line.setAttribute("marker-end", "url(#arrow-default)");
+      }
+    });
+
+    renderCallStack(step);
+    renderOutput(step);
+    renderCode(step);
+    renderStatus(step);
+
+    document.getElementById("stepCount").textContent =
+      `Step ${Math.min(stepIndex, trace.length - 1)} / ${Math.max(trace.length - 1, 0)}`;
+
+    document.getElementById("prevBtn").disabled = stepIndex <= 0;
+    document.getElementById("nextBtn").disabled = stepIndex >= trace.length - 1;
+    document.getElementById("playBtn").disabled = trace.length <= 1;
+  }
+
+  function renderCallStack(step) {
+    const el = document.getElementById("callStackView");
+    el.innerHTML = "";
+    const stack = step.callStack || [];
+    if (stack.length === 0) {
+      el.innerHTML = '<span class="stack-empty">Empty — nothing is being explored right now.</span>';
+      return;
+    }
+    stack.forEach((id, i) => {
+      const chip = document.createElement("div");
+      chip.className = "stack-chip" + (i === stack.length - 1 ? " top" : "");
+      chip.textContent = label(id);
+      el.appendChild(chip);
+    });
+  }
+
+  function renderOutput(step) {
+    const el = document.getElementById("outputView");
+    const title = document.getElementById("outputTitle");
+    const sub = document.getElementById("outputSub");
+    const reveal = document.getElementById("orderReveal");
+    el.innerHTML = "";
+    reveal.innerHTML = "";
+
+    title.textContent = "Finish order";
+    sub.textContent = "Fills in as each node is fully explored";
+
+    const out = step.output || [];
+    out.forEach(id => {
+      const chip = document.createElement("div");
+      chip.className = "stack-chip";
+      chip.textContent = label(id);
+      el.appendChild(chip);
+    });
+
+    if (step.action === "complete") {
+      sub.textContent = "Every node is finished";
+      const box = document.createElement("div");
+      box.className = "order-reveal reveal";
+      box.innerHTML = '<h3>Topological order — read left to right</h3><div class="order-chips">' +
+        step.order.map(id => `<span class="order-chip">${label(id)}</span>`).join("") +
+        "</div>";
+      reveal.appendChild(box);
+    }
+
+    if (step.action === "cycle-detected") {
+      const banner = document.createElement("div");
+      banner.className = "cycle-banner reveal";
+      banner.textContent = "No valid order exists — this graph has a cycle.";
+      reveal.appendChild(banner);
+    }
+  }
+
+  function renderCode(step) {
+    const pre = document.getElementById("codeView");
+    pre.innerHTML = "";
+    const active = new Set(step.line || []);
+    CODE_LINES.forEach((text, i) => {
+      const span = document.createElement("span");
+      span.className = "code-line" + (active.has(i) ? " active" : "") + (i === 4 && active.has(4) ? " cycle-line" : "");
+      span.textContent = text;
+      pre.appendChild(span);
+    });
+  }
+
+  function renderStatus(step) {
+    const el = document.getElementById("statusLine");
+    el.classList.toggle("is-cycle", step.action === "cycle" || step.action === "cycle-detected");
+    el.textContent = narrate(step);
+  }
+
+  function narrate(step) {
+    switch (step.action) {
+      case "start":
+        return nodeOrder.length === 0
+          ? "The canvas is empty. Add a few nodes and edges, or pick an example above."
+          : "Press play or step forward to start the search.";
+      case "enter":
+        return `Visiting ${label(step.node)} — marking it active and opening its list of neighbors.`;
+      case "check-edge": {
+        const s = step.neighborStateBefore;
+        if (s === 1) return `${label(step.node)} points to ${label(step.neighbor)}, which is already active on this very path.`;
+        if (s === 0) return `${label(step.node)} points to ${label(step.neighbor)}, which hasn't been visited — diving in.`;
+        return `${label(step.node)} points to ${label(step.neighbor)}, which is already finished — nothing to do here.`;
+      }
+      case "cycle":
+        return `${label(step.node)} → ${label(step.neighbor)} loops back onto the current path. That's a cycle — stopping here.`;
+      case "finish":
+        return `${label(step.node)} has no more unexplored neighbors, so it's done and goes onto the finish stack.`;
+      case "complete":
+        return "Every node is finished. Reading the finish stack from the top down gives a valid order.";
+      case "cycle-detected":
+        return "Search stopped: this graph has a cycle, so no topological order exists.";
+      default:
+        return "The canvas is empty. Add a few nodes and edges, or pick an example above.";
+    }
+  }
+
+  // ---------- transport controls ----------
+  function stopPlaying() {
+    playing = false;
+    clearTimeout(playTimer);
+    document.getElementById("playBtn").textContent = "▶ Play";
+  }
+
+  function stepTo(i) {
+    stepIndex = Math.max(0, Math.min(trace.length - 1, i));
+    renderStep();
+  }
+
+  function playTick() {
+    if (!playing) return;
+    if (stepIndex >= trace.length - 1) { stopPlaying(); return; }
+    stepTo(stepIndex + 1);
+    const delay = SPEED_MS[document.getElementById("speedRange").value] || 900;
+    playTimer = setTimeout(playTick, delay);
+  }
+
+  document.getElementById("nextBtn").addEventListener("click", () => { stopPlaying(); stepTo(stepIndex + 1); });
+  document.getElementById("prevBtn").addEventListener("click", () => { stopPlaying(); stepTo(stepIndex - 1); });
+  document.getElementById("resetBtn").addEventListener("click", () => { stopPlaying(); stepTo(0); });
+  document.getElementById("playBtn").addEventListener("click", () => {
+    if (playing) { stopPlaying(); return; }
+    if (stepIndex >= trace.length - 1) stepIndex = 0;
+    playing = true;
+    document.getElementById("playBtn").textContent = "⏸ Pause";
+    playTick();
+  });
+
+  // ---------- mode toolbar ----------
+  const HINTS = {
+    move: "Drag nodes to rearrange them. Double-click a node to rename it.",
+    "add-node": "Click empty space to add a node.",
+    "add-edge": "Click a start node, then the node it points to.",
+    delete: "Click a node or an edge to remove it."
+  };
+  document.querySelectorAll(".mode-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      mode = btn.getAttribute("data-mode");
+      document.getElementById("modeHint").textContent = HINTS[mode];
+      edgeStartId = null;
+      drawGraph();
+      renderStep();
+    });
+  });
+
+  document.getElementById("clearBtn").addEventListener("click", () => {
+    nodes = new Map(); nodeOrder = []; edges = []; edgeStartId = null;
+    onGraphChanged();
+  });
+
+  document.getElementById("presetSelect").addEventListener("change", (ev) => {
+    loadPreset(ev.target.value);
+  });
+
+  // ---------- change pipeline ----------
+  function onGraphChanged() {
+    stopPlaying();
+    computeTrace();
+    drawGraph();
+    renderSelectionHighlight();
+    renderStep();
+  }
+
+  // ---------- init ----------
+  loadPreset("dressing");
+})();
+</script>
+</body>
+</html>
